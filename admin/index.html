@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flower VIP | Admin Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#D4AF37',
+                        anthracite: '#1E293B'
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-anthracite font-sans min-h-screen">
+
+    <!-- Login Section -->
+    <div id="login-section" class="flex items-center justify-center min-h-screen p-6">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gold rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gold/20">
+                    <i class="ph ph-lock-key text-white text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold">Admin Girişi</h1>
+                <p class="text-gray-400 text-sm mt-2">Devam etmek için lütfen giriş yapın.</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                    <input type="text" id="username" required class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-gold transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                    <input type="password" id="password" required class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-gold transition-colors">
+                </div>
+                <button type="submit" class="w-full bg-gold text-white font-bold py-3.5 rounded-xl mt-4 hover:bg-opacity-90 transition-all shadow-lg shadow-gold/20">
+                    Giriş Yap
+                </button>
+            </form>
+            <p id="error-msg" class="text-red-500 text-xs text-center mt-4 hidden">Hatalı kullanıcı adı veya şifre!</p>
+        </div>
+    </div>
+
+    <!-- Dashboard Section (Hidden initially) -->
+    <div id="dashboard-section" class="hidden">
+        <!-- ... existing dashboard code ... -->
+    </div>
+
+    <!-- External Config (Ignored by Git) -->
+    <script src="config.js"></script>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const errorMsg = document.getElementById('error-msg');
+
+        // Check if already logged in (session storage used for temporary login)
+        if (sessionStorage.getItem('isVipAdmin') === 'true') {
+            showDashboard();
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            // Use credentials from config.js (local only) or fallback
+            if (typeof ADMIN_CONFIG !== 'undefined') {
+                if (user === ADMIN_CONFIG.username && pass === ADMIN_CONFIG.password) {
+                    sessionStorage.setItem('isVipAdmin', 'true');
+                    showDashboard();
+                } else {
+                    showError();
+                }
+            } else {
+                // If config.js is missing (like on public GitHub), login will fail
+                console.error('Admin configuration not found.');
+                alert('Sistem hatası: Giriş bilgileri bulunamadı.');
+            }
+        });
+
+        function showError() {
+            errorMsg.classList.remove('hidden');
+            setTimeout(() => errorMsg.classList.add('hidden'), 3000);
+        }
+
+        function showDashboard() {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            loadBookings();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isVipAdmin');
+            window.location.reload();
+        }
+
+        function loadBookings() {
+            const bookings = JSON.parse(localStorage.getItem('flowerVipBookings') || '[]');
+            const tableBody = document.getElementById('bookings-table-body');
+            const emptyState = document.getElementById('empty-state');
+            
+            tableBody.innerHTML = '';
+            
+            if (bookings.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            // Sort by date (newest first)
+            bookings.reverse().forEach(booking => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">${booking.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-gray-900">${booking.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${booking.phone}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-xs text-gray-500 mb-1">Yolcu: <span class="text-anthracite font-semibold">${booking.passengers}</span></div>
+                        <div class="text-xs text-gray-500">Saat: <span class="text-anthracite font-semibold">${booking.time}</span></div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="text-green-600 font-medium">${booking.pickup}</span>
+                            <i class="ph ph-arrow-right text-gray-300"></i>
+                            <span class="text-blue-600 font-medium">${booking.dropoff}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="deleteBooking(${booking.id})" class="text-red-400 hover:text-red-600 transition-colors p-2">
+                            <i class="ph ph-trash text-xl"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function deleteBooking(id) {
+            if (confirm('Bu rezervasyon kaydını silmek istediğinize emin misiniz?')) {
+                let bookings = JSON.parse(localStorage.getItem('flowerVipBookings') || '[]');
+                bookings = bookings.filter(b => b.id !== id);
+                localStorage.setItem('flowerVipBookings', JSON.stringify(bookings));
+                loadBookings();
+            }
+        }
+
+        function refreshBookings() {
+            loadBookings();
+        }
+    </script>
+</body>
+</html>
